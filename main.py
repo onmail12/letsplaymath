@@ -4,9 +4,12 @@ import sys
 import json
 
 from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5.QtCore import Qt
 from PyQt5.QtMultimedia import QSound
 from PyQt5.QtWidgets import QApplication, QWidget, QTextEdit, QVBoxLayout, QPushButton, QProgressBar, QMainWindow, \
     QTableWidgetItem, QHeaderView
+
+from difficulty import Ui_Difficulty
 from menu import Ui_Form
 
 
@@ -15,10 +18,10 @@ class MainMenu(QWidget, Ui_Form):
         super(MainMenu, self).__init__()
         self.setWindowTitle("Let's Play MATH")
         self.setupUi(self)
-        self.btn_quiz_add.clicked.connect(lambda: self.open_quiz("+"))
-        self.btn_quiz_subtract.clicked.connect(lambda: self.open_quiz("-"))
-        self.btn_quiz_multiply.clicked.connect(lambda: self.open_quiz("*"))
-        self.btn_quiz_divide.clicked.connect(lambda: self.open_quiz("/"))
+        self.btn_quiz_add.clicked.connect(lambda: self.to_difficulty("+"))
+        self.btn_quiz_subtract.clicked.connect(lambda: self.to_difficulty("-"))
+        self.btn_quiz_multiply.clicked.connect(lambda: self.to_difficulty("*"))
+        self.btn_quiz_divide.clicked.connect(lambda: self.to_difficulty("/"))
 
         self.setup_table()
 
@@ -43,34 +46,74 @@ class MainMenu(QWidget, Ui_Form):
 
                 row += 1
 
-    def open_quiz(self, operation):
-        self.quiz = MyWidget()
-        self.quiz.setup_quiz(operation)
+    def to_difficulty(self, operation):
+        self.difficulty = DifficultyMenu(operation)
+        self.difficulty.show()
+        self.hide()
+
+
+class DifficultyMenu(QWidget, Ui_Difficulty):
+    def __init__(self, operation):
+        super(DifficultyMenu, self).__init__()
+        self.setWindowTitle("Let's Play MATH")
+        self.setupUi(self)
+
+        self.btn_diff_easy.clicked.connect(lambda: self.to_quiz("mudah", operation))
+        self.btn_diff_medium.clicked.connect(lambda: self.to_quiz("sedang", operation))
+        self.btn_diff_hard.clicked.connect(lambda: self.to_quiz("sulit", operation))
+
+    def to_quiz(self, difficulty, operation):
+        self.quiz = MyWidget(difficulty, operation)
+        self.quiz.setup_quiz()
         self.quiz.show()
-        self.hide()  # Optionally hide the current window
+        self.hide()
 
 
 class MyWidget(QMainWindow):
-    def __init__(self):
+    def __init__(self, difficulty, operation):
+        super().__init__()
         self.main_v_layout = None
+
+        self.operation = operation
+        self.difficulty = difficulty
         self.sound_correct = QSound("audio/correct.wav")
-        self.sound_incorrect = QSound("audio/correct.wav")
+        self.sound_incorrect = QSound("audio/incorrect.wav")
         self.progress_bar_value = 0
         self.window_width = 972
         self.window_height = 610
         self.user_correct_answers = 0
         self.current_question = 0
 
-    def setup_quiz(self, operation):
+    def setup_quiz(self):
         super().__init__()
         self.setWindowTitle(f"Let's Play MATH")
-        self.operation = operation
         self.resize(self.window_width, self.window_height)
         self.parentWidget = QtWidgets.QWidget(self)
         self.parentWidget.setGeometry(QtCore.QRect(50, 140, 871, 271))
         self.main_v_layout = QtWidgets.QVBoxLayout(self.parentWidget)
         self.main_v_layout.setContentsMargins(16, 40, 16, 40)
         self.setCentralWidget(self.parentWidget)
+
+        self.layout_heart_icon = QtWidgets.QHBoxLayout()
+        spacerItem = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+        self.layout_heart_icon.addItem(spacerItem)
+        for i in range(5):
+            self.icon_heart = QtWidgets.QLabel(self)
+            self.icon_heart.setMaximumSize(QtCore.QSize(30, 30))
+            self.icon_heart.setPixmap(QtGui.QPixmap("image/icon_heart.png"))
+            self.icon_heart.setScaledContents(True)
+            self.layout_heart_icon.addWidget(self.icon_heart)
+        self.main_v_layout.addLayout(self.layout_heart_icon)
+
+        self.label_game_difficulty = QtWidgets.QLabel(self)
+        self.label_game_difficulty.setMaximumHeight(50)
+        self.label_game_difficulty.setAlignment(QtCore.Qt.AlignCenter)
+        font = QtGui.QFont()
+        font.setPointSize(20)
+        self.label_game_difficulty.setFont(font)
+        self.label_game_difficulty.setText(self.difficulty.title())
+
+        self.main_v_layout.addWidget(self.label_game_difficulty)
 
         self.progress_bar = QProgressBar()
         self.progress_bar.setRange(0, 10)
@@ -110,7 +153,6 @@ class MyWidget(QMainWindow):
         self.answers_g_layout.setSpacing(40)
         self.btn_answer1 = QtWidgets.QPushButton(self.parentWidget)
         self.btn_answer1.setMinimumSize(QtCore.QSize(200, 100))
-        self.btn_answer1.setText("btn 1")
         self.btn_answer2 = QtWidgets.QPushButton(self.parentWidget)
         self.btn_answer2.setMinimumSize(QtCore.QSize(200, 100))
         self.btn_answer3 = QtWidgets.QPushButton(self.parentWidget)
@@ -131,20 +173,23 @@ class MyWidget(QMainWindow):
 
         self.generate_question()
 
-    def shuffle_buttons(self):
-        coordinates = [(0, 2, 1, 1), (1, 1, 1, 1), (0, 1, 1, 1), (1, 2, 1, 1)]
-        buttons = [self.btn_answer1, self.btn_answer2, self.btn_answer3, self.btn_answer4]
-        random.shuffle(coordinates)
-
-        for button, coordinate in zip(buttons, coordinates):
-            self.answers_g_layout.addWidget(button, *coordinate)
-
     def generate_question(self):
-        if self.current_question >= 10:
-            self.game_finished()
+        if self.difficulty == "mudah":
+            first_number = random.randint(1, 20)
+            second_number = random.randint(1, 20)
 
-        first_number = random.randint(1, 100)
-        second_number = random.randint(1, 100)
+        if self.difficulty == "sedang" or self.user_correct_answers >= 10:
+            self.progress_bar.setRange(0, 20)
+            self.progress_bar.setFormat(f"{self.progress_bar_value}/20")
+            self.label_game_difficulty.setText("Sedang")
+            first_number = random.randint(30, 100)
+            second_number = random.randint(30, 100)
+
+        if self.difficulty == "sulit" or self.user_correct_answers >= 20:
+            self.progress_bar.hide()
+            self.label_game_difficulty.setText("Sulit")
+            first_number = random.randint(30, 1000)
+            second_number = random.randint(30, 1000)
 
         self.labelOperation.setText(self.operation)
 
@@ -172,11 +217,20 @@ class MyWidget(QMainWindow):
                 incorrect_answers.append(random_answer)
 
         self.btn_answer1.setText(str(correct_answer).replace(".0", ""))
+        self.btn_answer1.setStyleSheet("background-color: green")
         self.btn_answer2.setText(str(incorrect_answers[0]))
         self.btn_answer3.setText(str(incorrect_answers[1]))
         self.btn_answer4.setText(str(incorrect_answers[2]))
 
         self.shuffle_buttons()
+
+    def shuffle_buttons(self):
+        coordinates = [(0, 2, 1, 1), (1, 1, 1, 1), (0, 1, 1, 1), (1, 2, 1, 1)]
+        buttons = [self.btn_answer1, self.btn_answer2, self.btn_answer3, self.btn_answer4]
+        random.shuffle(coordinates)
+
+        for button, coordinate in zip(buttons, coordinates):
+            self.answers_g_layout.addWidget(button, *coordinate)
 
     def check_answer(self, user_answer):
         user_answer = int(float(user_answer))
@@ -188,11 +242,24 @@ class MyWidget(QMainWindow):
 
             self.sound_correct.play()
             self.current_question += 1
-            self.generate_question()
-        else:
-            pass
 
+            # if self.current_question >= 10:
+            #
 
+        else: # wrong answer
+            self.destroy_heart()
+            self.sound_incorrect.play()
+            if self.layout_heart_icon.count() == 1:  # one of the item is a spacer
+                self.game_finished()
+
+        self.generate_question()
+
+    def destroy_heart(self):
+        if self.layout_heart_icon.count() > 0:
+            item = self.layout_heart_icon.takeAt(self.layout_heart_icon.count() - 1).widget()
+            widget = item
+            if widget:
+                widget.deleteLater()
 
     def game_finished(self):
         # save skor ke file json

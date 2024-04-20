@@ -13,7 +13,10 @@
   <property name="windowTitle">
    <string>Form</string>
   </property>
-  <layout class="QVBoxLayout" name="main_v_layout">
+  <layout class="QVBoxLayout" name="main_v_layout" stretch="0,1,1,1,1">
+   <property name="spacing">
+    <number>5</number>
+   </property>
    <property name="leftMargin">
     <number>16</number>
    </property>
@@ -27,12 +30,53 @@
     <number>40</number>
    </property>
    <item>
+    <layout class="QHBoxLayout" name="layout_heart_icon">
+     <item>
+      <spacer name="spacer_layout_heart">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item>
+      <widget class="QLabel" name="icon_heart">
+       <property name="maximumSize">
+        <size>
+         <width>30</width>
+         <height>30</height>
+        </size>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+       <property name="pixmap">
+        <pixmap>../../../Pictures/Screenshots/Screenshot_20240417_231504.png</pixmap>
+       </property>
+       <property name="scaledContents">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
     <widget class="QLabel" name="label_game_difficulty">
      <property name="maximumSize">
       <size>
        <width>16777215</width>
        <height>50</height>
       </size>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>20</pointsize>
+      </font>
      </property>
      <property name="text">
       <string>gameDifficulty</string>
